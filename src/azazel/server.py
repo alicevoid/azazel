@@ -7,15 +7,19 @@ Server Design
 
 # The actual Server itself
 class FTPServer:
-    def __init__(self, host='', port=2121):
+    def __init__(self, host='', port=2121, reuse_addr=False):
         self.host = host
         self.port = port
         self.socket = None      # the listening socket
         self.sessions = []      # connected clients
+
+        self.reuse_addr = reuse_addr # dev flag, basically
     
     def start(self):
         # Behavior on Startup
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        if self.reuse_addr: 
+            self.socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.socket.bind((self.host, self.port))
         self.socket.listen()
         print(f'listening on {self.host}:{self.port}')
