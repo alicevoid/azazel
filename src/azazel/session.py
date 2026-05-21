@@ -15,12 +15,14 @@ class FTPSession:
         self.conn = conn
         self.addr = addr
         self.state = 'NOT_LOGGED_IN'
+        self.authenticated = False
 
         # dispatch table
         self.commands = {
             'NOOP': self.handle_noop, 
             'QUIT': self.handle_quit, 
             'USER': self.handle_user, 
+            'PASS': self.handle_pass,
         }
     
     def send(self, message):
@@ -60,6 +62,20 @@ class FTPSession:
 
     def handle_user(self, args):
         # Establish User Connection
+        # TODO: Error Handling
         self.username = args
         self.send('331 User name okay, need password\r\n')
 
+    def handle_pass(self, args):
+        # Authenticate User 
+        # TODO: Authentication Methods
+        self.authenticated = True
+        self.state = 'LOGGED_IN'
+        self.send('230 User logged in\r\n')
+
+    def require_auth(self):
+        # Do we require Authentification or not? 
+        if not self.authenticated:
+            self.send('530 Not logged in\r\n')
+            return False
+        return True

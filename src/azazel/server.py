@@ -7,11 +7,12 @@ Server Design
 
 # The actual Server itself
 class FTPServer:
-    def __init__(self, host='', port=2121, reuse_addr=False):
+    def __init__(self, host='', port=2121, reuse_addr=False, password=None):
         self.host = host
         self.port = port
-        self.socket = None      # the listening socket
-        self.sessions = []      # connected clients
+        self.socket = None       # the listening socket
+        self.password = password # for password-protected servers
+        self.sessions = []       # connected clients
 
         self.reuse_addr = reuse_addr # dev flag, basically
     

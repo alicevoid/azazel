@@ -29,7 +29,25 @@ class TestFTPServer(unittest.TestCase):
         response = self.client.recv(1024)
         self.assertIn(b'200', response)
 
-    def test_USER(self):
+    # TODO: add testing for login verification methods
+
+    def test_Login(self):
+        # tests the ability for the user to Log-In
+        self.sample_USER()
+        self.sample_PASS()
+
+    def sample_USER(self):
+        # Testing USER
+        self.client.send(b'USER alice\r\n')
+        response = self.client.recv(1024)
+        self.assertIn(b'331 User name okay, need password\r\n', response)
+        pass
+
+    def sample_PASS(self):
+        # Testing PASS
+        self.client.send(b'PASS testpw\r\n')
+        response = self.client.recv(1024)
+        self.assertIn(b'230 User logged in\r\n', response)
         pass
 
     def test_QUIT(self):
