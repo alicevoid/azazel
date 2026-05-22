@@ -1,3 +1,9 @@
+import socket
+import os
+import stat
+import time
+from azazel.dtp import DataTransferProcess
+
 """
 Session Design
 
@@ -21,6 +27,9 @@ class FTPSession:
         self.root = root
         self.cwd = '/'
 
+        # data transfer stuff
+        self.data_addr = None
+
         # dispatch table
         self.commands = {
             'NOOP': self.handle_noop, 
@@ -30,6 +39,9 @@ class FTPSession:
             'PWD' : self.handle_pwd,
             'CWD' : self.handle_cwd,
             'PORT': self.handle_port,
+            'LIST': self.handle_list,
+            'RETR': self.handle_retr,
+            'STOR': self.handle_stor,
         }
     
     def send(self, message):
@@ -90,6 +102,11 @@ class FTPSession:
 
     def handle_port(self, args):
         # Handle IP / PORT setting
+        parts = args.split(',') # i.e: 192.168.0.1:50185 -> 192,168,0,1,196,9
+        ip = '.'.join(parts[:4])
+        port = (int(parts[4]) * 256) + int(parts[5])
+        self.data_addr = (ip, port)
+        self.send('200 PORT command successful\r\n')
         pass
 
     def require_auth(self):
@@ -98,3 +115,84 @@ class FTPSession:
             self.send('530 Not logged in\r\n')
             return False
         return True
+
+    def open_data_connection(self):
+        # Sets up the Data Transfer Process
+        if not self.data_addr: 
+            self.send('425 Use PORT first\r\n')
+            return None
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(self.data_addr) # set during PORT
+        return sock
+
+    def handle_list(self, args): 
+        if not self.require_auth():
+            return
+        if not self.data_addr:
+            self.send('425 Use PORT first\r\n')
+            return
+
+        # filepath resolution
+        filepath = os.path.join(self.root, self.cwd.lstrip('/'), args)
+        if not os.path.exists(filepath):
+            self.send('550 File not found\r\n')
+            return
+
+        self.send('150 Opening data connection\r\n')
+        sock = self.open_data_connection()
+        dtp = DataTransferProcess(sock)
+        dtp.send_listing(self.list_dir(filepath))
+        sock.close()
+        self.send('226 Transfer complete\r\n')
+
+    def list_dir(self, path):
+        # Handle extended listing display {i.e: ls -l}
+        entries = []
+        for name in os.listdir(path):
+            full = os.path.join(path, name)
+            s = os.stat(full)
+            size = s.st_size
+            mtime = time.strftime('%b %d %H:%M', time.localtime(s.st_mtime))
+            kind = 'd' if os.path.isdir(full) else '-'
+            entries.append(f'{kind}rwxr-xr-x 1 ftp ftp {size:>8} {mtime} {name}')
+        return entries
+
+    def handle_stor(self, args):
+        if not self.require_auth():
+            return
+        if not self.data_addr:
+            self.send('425 Use PORT first\r\n')
+            return
+
+        # filepath resolution
+        filepath = os.path.join(self.root, self.cwd.lstrip('/'), args)
+        if not os.path.exists(filepath):
+            self.send('550 File not found\r\n')
+            return
+
+        self.send('125 Data connection already open\r\n')
+        sock = self.open_data_connection()
+        dtp = DataTransferProcess(sock)
+        dtp.recv_file(filepath)
+        dtp.close()
+        self.send('226 Transfer complete\r\n')
+
+    def handle_retr(self, args):
+        if not self.require_auth():
+            return
+        if not self.data_addr:
+            self.send('425 Use PORT first\r\n')
+            return
+
+        # filepath resolution
+        filepath = os.path.join(self.root, self.cwd.lstrip('/'), args)
+        if not os.path.exists(filepath):
+            self.send('550 File not found\r\n')
+            return
+
+        self.send('150 Opening data connection\r\n')
+        sock = self.open_data_connection()
+        dtp = DataTransferProcess(sock)
+        dtp.send_file(filepath)
+        dtp.close()
+        self.send('226 Transfer complete\r\n')
