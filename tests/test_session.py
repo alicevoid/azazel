@@ -41,14 +41,30 @@ class TestFTPServer(unittest.TestCase):
         self.client.send(b'USER alice\r\n')
         response = self.client.recv(1024)
         self.assertIn(b'331 User name okay, need password\r\n', response)
-        pass
 
     def sample_PASS(self):
         # Testing PASS
         self.client.send(b'PASS testpw\r\n')
         response = self.client.recv(1024)
         self.assertIn(b'230 User logged in\r\n', response)
-        pass
+
+    def test_Directory(self):
+        # Testing Directory Methods
+        self.sample_CWD()
+        self.sample_PWD()
+
+
+    def sample_CWD(self):
+        # Testing CWD
+        self.client.send(b'CWD /placeholder\r\n')
+        response = self.client.recv(1024)
+        self.assertIn(b'250 directory changed to "/placeholder"\r\n', response)
+
+    def sample_PWD(self):
+        # Testing PWD 
+        self.client.send(b'PWD\r\n')
+        response = self.client.recv(1024)
+        self.assertIn(b'250 current directory is "/placeholder"\r\n', response)
 
     def test_QUIT(self):
         # Testing QUIT

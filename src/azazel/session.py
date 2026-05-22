@@ -11,11 +11,15 @@ Session Design
 
 # The FTP Session Instance 
 class FTPSession:
-    def __init__(self, conn, addr):
+    def __init__(self, conn, addr, root):
         self.conn = conn
         self.addr = addr
         self.state = 'NOT_LOGGED_IN'
         self.authenticated = False
+
+        # dir stuff
+        self.root = root
+        self.cwd = '/'
 
         # dispatch table
         self.commands = {
@@ -23,6 +27,9 @@ class FTPSession:
             'QUIT': self.handle_quit, 
             'USER': self.handle_user, 
             'PASS': self.handle_pass,
+            'PWD' : self.handle_pwd,
+            'CWD' : self.handle_cwd,
+            'PORT': self.handle_port,
         }
     
     def send(self, message):
@@ -72,6 +79,18 @@ class FTPSession:
         self.authenticated = True
         self.state = 'LOGGED_IN'
         self.send('230 User logged in\r\n')
+
+    def handle_pwd(self, args):
+        # Print working directory
+        self.send(f'250 current directory is "{self.cwd}"\r\n')
+
+    def handle_cwd(self, args):
+        self.cwd = args
+        self.send(f'250 directory changed to "{self.cwd}"\r\n')
+
+    def handle_port(self, args):
+        # Handle IP / PORT setting
+        pass
 
     def require_auth(self):
         # Do we require Authentification or not? 
