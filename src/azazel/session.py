@@ -1,9 +1,3 @@
-import socket
-import os
-import stat
-import time
-from azazel.dtp import DataTransferProcess
-
 """
 Session Design
 
@@ -14,6 +8,12 @@ Session Design
     but for now, i'm just learning as i go 
 
 """
+
+import socket
+import os
+import stat
+import time
+from azazel.dtp import DataTransferProcess
 
 # The FTP Session Instance 
 class FTPSession:

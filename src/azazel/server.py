@@ -1,10 +1,13 @@
 import socket
-import os
-from azazel.session import FTPSession
-
 """
 Server Design
+
+    host for Sessions
+
 """
+
+import os
+from azazel.session import FTPSession
 
 # The actual Server itself
 class FTPServer:
