@@ -29,6 +29,7 @@ class FTPSession:
 
         # data transfer stuff
         self.data_addr = None
+        self.transfer_type = 'A'
 
         # dispatch table
         self.commands = {
@@ -42,6 +43,7 @@ class FTPSession:
             'LIST': self.handle_list,
             'RETR': self.handle_retr,
             'STOR': self.handle_stor,
+            'TYPE': self.handle_type,
         }
     
     def send(self, message):
@@ -94,7 +96,7 @@ class FTPSession:
 
     def handle_pwd(self, args):
         # Print working directory
-        self.send(f'250 current directory is "{self.cwd}"\r\n')
+        self.send(f'257 "{self.cwd}" is current directory\r\n')
 
     def handle_cwd(self, args):
         self.cwd = args
@@ -196,3 +198,12 @@ class FTPSession:
         dtp.send_file(filepath)
         dtp.close()
         self.send('226 Transfer complete\r\n')
+
+    def handle_type(self, args):
+        # A=ASCII, I=Binary/Img
+        if args in ('A', 'I'):
+            self.transfer_type = args
+            self.send(f'200 Type set to {args}\r\n')
+        else:
+            self.send('504 Type not supported\r\n')
+

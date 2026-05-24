@@ -12,6 +12,6 @@ dependencies = []
 azazel = "azazel.server:main"
 
 [project.optional-dependencies]
-dev = = [
+dev = [
   "coverage",
 ]

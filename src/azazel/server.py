@@ -1,4 +1,5 @@
 import socket
+import os
 from azazel.session import FTPSession
 
 """
@@ -36,8 +37,14 @@ class FTPServer:
             self.sessions.append(session)
             session.handle()
 
+def resolve_root(root=None):
+    if root: 
+        return os.path.abspath(root)
+    return os.getcwd()
+ 
 # for Testing
 if __name__ == '__main__':
-    ftp = FTPServer()   # builds the machine
-    ftp.start()         # turns it on
+    # Server that we spin up for quick testing
+    ftp = FTPServer(host='localhost', port=2121, root=resolve_root())
+    ftp.start()
 
