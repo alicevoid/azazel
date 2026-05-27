@@ -85,6 +85,29 @@ class TestFTPServer(unittest.TestCase):
         self.client.recv(1024) # 226 transfer complete
         self.assertGreater(len(received), 0) 
 
+    def test_STOR_PASV(self):
+        # 1. log in
+        self.login()
+
+        # 2. Set up the data socket
+        ds = self.open_pasv_channel()
+
+        # 3. issue RETR
+        self.client.send(b'STOR uploaded.txt\r\n')
+        self.client.recv(1024) # 125 
+
+        # 4. send the file contents 
+        ds.sendall(b'hello from test\n')
+        ds.close()
+
+        self.client.recv(1024) # 226 transfer complete
+
+        # 5. verify it landed 
+        uploaded = os.path.join(TEST_ROOT, 'uploaded.txt')
+        self.assertTrue(os.path.exists(uploaded))
+        with open(uploaded, 'rb') as f:
+            self.assertEqual(f.read(), b'hello from test\n')
+
     def login(self):
         # Login Helper
         self.client.send(b'USER alice\r\n')
