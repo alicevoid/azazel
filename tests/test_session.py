@@ -37,7 +37,7 @@ class TestFTPServer(unittest.TestCase):
         response = self.client.recv(1024)
         self.assertIn(b'200', response)
 
-    def test_RETR(self):
+    def test_RETR_Active(self):
         # 1. log in
         self.login()
 
@@ -62,6 +62,29 @@ class TestFTPServer(unittest.TestCase):
         self.client.recv(1024) # 226 transfer complete
         self.assertGreater(len(received), 0) 
 
+    def test_RETR_PASV(self):
+        # 1. log in
+        self.login()
+
+        # 2. Set up the data socket
+        ds = self.open_pasv_channel()
+
+        # 3. issue RETR
+        self.client.send(b'RETR test.txt\r\n')
+        self.client.recv(1024) # 150 opening...
+
+        # 4. accept server's incoming data stream
+        received = b''
+        while True:
+            chunk = ds.recv(4096)
+            if not chunk:
+                break
+            received += chunk
+        ds.close()
+
+        self.client.recv(1024) # 226 transfer complete
+        self.assertGreater(len(received), 0) 
+
     def login(self):
         # Login Helper
         self.client.send(b'USER alice\r\n')
@@ -70,7 +93,7 @@ class TestFTPServer(unittest.TestCase):
         self.client.recv(1024)
 
     def open_data_channel(self):
-        # Data Socket Helper, returns (data_server_socket, port)
+        # Active Data Socket Helper, returns (data_server_socket, port)
         ds = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         ds.bind(('127.0.0.1', 0))
         ds.listen(1)
@@ -79,6 +102,19 @@ class TestFTPServer(unittest.TestCase):
         self.client.send(f'PORT 127,0,0,1,{p1},{p2}\r\n'.encode())
         self.client.recv(1024)  # 200 PORT ok
         return ds
+
+    def open_pasv_channel(self):
+        # Passive Data Socket Helper
+        self.client.send(b'PASV\r\n')
+        response = self.client.recv(1024).decode() # parse ip & port
+        # expecting (127,0,0,1,p1,p2)
+        start = response.index('(') + 1
+        end = response.index(')')
+        parts = response[start:end].split(',')
+        port = int(parts[4]) * 256 + int(parts[5])
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        sock.connect(('127.0.0.1', port))
+        return sock
 
     def test_Directory(self):
         # Testing Directory Methods
@@ -95,7 +131,7 @@ class TestFTPServer(unittest.TestCase):
         # Testing PWD 
         self.client.send(b'PWD\r\n')
         response = self.client.recv(1024)
-        self.assertIn(b'250 current directory is "/placeholder"\r\n', response)
+        self.assertIn(b'257 "/placeholder" is current directory\r\n', response)
 
     def test_QUIT(self):
         # Testing QUIT

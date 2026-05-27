@@ -22,6 +22,8 @@ class FTPSession:
         self.addr = addr
         self.state = 'NOT_LOGGED_IN'
         self.authenticated = False
+        self.pasv_mode = False
+        self.pasv_sock = None
 
         # dir stuff
         self.root = root
@@ -44,6 +46,7 @@ class FTPSession:
             'RETR': self.handle_retr,
             'STOR': self.handle_stor,
             'TYPE': self.handle_type,
+            'PASV': self.handle_pasv,
         }
     
     def send(self, message):
@@ -120,18 +123,25 @@ class FTPSession:
 
     def open_data_connection(self):
         # Sets up the Data Transfer Process
-        if not self.data_addr: 
+        if self.pasv_mode and self.pasv_sock:
+            conn, _ = self.pasv_sock.accept() # Client initiates
+            self.pasv_sock.close()
+            self.pasv_sock = None
+            self.pasv_mode = False
+            return conn
+        elif self.data_addr: 
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.connect(self.data_addr) # set during PORT
+            return sock
+        else:
             self.send('425 Use PORT first\r\n')
             return None
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        sock.connect(self.data_addr) # set during PORT
-        return sock
 
     def handle_list(self, args): 
         if not self.require_auth():
             return
-        if not self.data_addr:
-            self.send('425 Use PORT first\r\n')
+        if not self.data_addr and not self.pasv_mode:
+            self.send('425 Use PORT or PASV first\r\n')
             return
 
         # filepath resolution
@@ -162,13 +172,13 @@ class FTPSession:
     def handle_stor(self, args):
         if not self.require_auth():
             return
-        if not self.data_addr:
-            self.send('425 Use PORT first\r\n')
+        if not self.data_addr and not self.pasv_mode:
+            self.send('425 Use PORT or PASV first\r\n')
             return
 
         # filepath resolution
         filepath = os.path.join(self.root, self.cwd.lstrip('/'), args)
-        if not os.path.exists(filepath):
+        if not os.path.exists(os.path.dirname(filepath)):
             self.send('550 File not found\r\n')
             return
 
@@ -182,8 +192,8 @@ class FTPSession:
     def handle_retr(self, args):
         if not self.require_auth():
             return
-        if not self.data_addr:
-            self.send('425 Use PORT first\r\n')
+        if not self.data_addr and not self.pasv_mode:
+            self.send('425 Use PORT or PASV first\r\n')
             return
 
         # filepath resolution
@@ -206,4 +216,18 @@ class FTPSession:
             self.send(f'200 Type set to {args}\r\n')
         else:
             self.send('504 Type not supported\r\n')
+
+    def handle_pasv(self, args):
+        # handles passive port setting
+        self.pasv_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.pasv_sock.bind(('', 0)) # OS picks port
+        self.pasv_sock.listen(1)
+
+        _, port = self.pasv_sock.getsockname()
+        p1, p2 = port // 256, port % 256
+
+        # TODO: change sent command for actual production
+        self.send(f'227 Entering Passive Mode (127,0,0,1,{p1},{p2})\r\n')
+        self.pasv_mode = True
+
 
