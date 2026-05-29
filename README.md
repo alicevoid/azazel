@@ -62,6 +62,7 @@ Currently, this is about the extent of what you can do with it through the comma
 -----
 # etc...
 This project is licensed under the GPL-3.0 License.
+
 100% artisan-made code by hand.
 
 alicevoid - make sure to love yourself <3
