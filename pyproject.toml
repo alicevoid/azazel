@@ -11,7 +11,7 @@ dependencies = [
 ]
 
 [project.scripts]
-azazel = "azazel.server:main"
+azazel = "azazel.interface:main"
 
 [project.optional-dependencies]
 dev = [
