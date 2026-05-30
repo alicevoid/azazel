@@ -53,9 +53,9 @@ Currently, this is about the extent of what you can do with it through the comma
 - [x] passive mode (PASV)
 - [x] CLI entry point 
 - [x] NixOS flake packaging
+- [x] logging
 - [ ] proper authentication methods
 - [ ] FTPS — TLS support
-- [ ] logging
 - [ ] internet deployment (NAT traversal, DDNS)
 - [ ] extended CLI subcommands
 
