@@ -15,6 +15,7 @@ RESPONSES = {
     125: "Data connection already open",
     150: "Opening data connection",
     200: "OK",
+    220: "Ready",
     221: "Goodbye",
     226: "Transfer complete",
     227: "Entering Passive Mode",
@@ -24,9 +25,9 @@ RESPONSES = {
     331: "User name okay, need password",
     425: "Use PORT or PASV first",
     502: "Command not implemented",
+    504: "Type not supported",
     530: "Not logged in",
     550: "File not found",
-    504: "Type not supported",
 }
 
 
@@ -55,12 +56,12 @@ class FTPHandler:
 
     def respond(self, code, message=None):
         msg = message or RESPONSES.get(code, "")
-        self.session.send(f"{code} {msg}\r\n")
+        self.session.send(f"{code} {msg}")
 
     def require_auth(self):
         # Do we require Authentification or not?
         if not self.session.authenticated:
-            self.session.respond(530)
+            self.respond(530)
             return False
         return True
 
@@ -77,7 +78,7 @@ class FTPHandler:
             sock.connect(self.session.data_addr)  # set during PORT
             return sock
         else:
-            self.session.respond(425)
+            self.respond(425)
             return None
 
     def list_dir(self, path):
@@ -94,32 +95,32 @@ class FTPHandler:
 
     def ftp_noop(self, args):
         # No Operation
-        self.session.respond(200)
+        self.respond(200)
 
     def ftp_quit(self, args):
         # Terminate
-        self.session.respond(221)
+        self.respond(221)
 
     def ftp_user(self, args):
         # Establish User Connection
         # TODO: Error Handling
         self.session.username = args
-        self.session.respond(331)
+        self.respond(331)
 
     def ftp_pass(self, args):
         # Authenticate User
         # TODO: Authentication Methods
         self.session.authenticated = True
         self.session.state = "LOGGED_IN"
-        self.session.respond(230)
+        self.respond(230)
 
     def ftp_pwd(self, args):
         # Print working directory
-        self.session.respond(257, f'"{self.session.cwd}" is current directory')
+        self.respond(257, f'"{self.session.cwd}" is current directory')
 
     def ftp_cwd(self, args):
         self.session.cwd = args
-        self.session.respond(250, f'directory changed to "{self.session.cwd}"')
+        self.respond(250, f'directory changed to "{self.session.cwd}"')
 
     def ftp_port(self, args):
         # Handle IP / PORT setting
@@ -127,75 +128,75 @@ class FTPHandler:
         ip = ".".join(parts[:4])
         port = (int(parts[4]) * 256) + int(parts[5])
         self.session.data_addr = (ip, port)
-        self.session.respond(200)
+        self.respond(200)
 
     def ftp_list(self, args):
         if not self.require_auth():
             return
         if not self.session.data_addr and not self.session.pasv_mode:
-            self.session.respond(425)
+            self.respond(425)
             return
 
         # filepath resolution
         filepath = os.path.join(self.session.root, self.session.cwd.lstrip("/"), args)
         if not os.path.exists(filepath):
-            self.session.respond(550)
+            self.respond(550)
             return
 
-        self.session.respond(150)
+        self.respond(150)
         sock = self.open_data_connection()
         dtp = DataTransferProcess(sock)
         dtp.send_listing(self.list_dir(filepath))
         sock.close()
-        self.session.respond(226)
+        self.respond(226)
 
     def ftp_stor(self, args):
         if not self.require_auth():
             return
         if not self.session.data_addr and not self.session.pasv_mode:
-            self.session.respond(425)
+            self.respond(425)
             return
 
         # filepath resolution
         filepath = os.path.join(self.session.root, self.session.cwd.lstrip("/"), args)
         if not os.path.exists(os.path.dirname(filepath)):
-            self.session.respond(550)
+            self.respond(550)
             return
 
-        self.session.respond(125)
+        self.respond(125)
         sock = self.open_data_connection()
         dtp = DataTransferProcess(sock)
         dtp.recv_file(filepath)
         dtp.close()
-        self.session.respond(226)
+        self.respond(226)
 
     def ftp_retr(self, args):
         if not self.require_auth():
             return
         if not self.session.data_addr and not self.session.pasv_mode:
-            self.session.respond(425)
+            self.respond(425)
             return
 
         # filepath resolution
         filepath = os.path.join(self.session.root, self.session.cwd.lstrip("/"), args)
         if not os.path.exists(filepath):
-            self.session.respond(550)
+            self.respond(550)
             return
 
-        self.session.respond(150)
+        self.respond(150)
         sock = self.open_data_connection()
         dtp = DataTransferProcess(sock)
         dtp.send_file(filepath)
         dtp.close()
-        self.session.respond(226)
+        self.respond(226)
 
     def ftp_type(self, args):
         # A=ASCII, I=Binary/Img
         if args in ("A", "I"):
             self.session.transfer_type = args
-            self.session.respond(200, f"Type set to {args}")
+            self.respond(200, f"Type set to {args}")
         else:
-            self.session.respond(504)
+            self.respond(504)
 
     def ftp_pasv(self, args):
         # handles passive port setting
@@ -207,5 +208,5 @@ class FTPHandler:
         p1, p2 = port // 256, port % 256
 
         # TODO: change sent command for actual production
-        self.session.respond(227, f"Entering Passive Mode (127,0,0,1,{p1},{p2})")
+        self.respond(227, f"Entering Passive Mode (127,0,0,1,{p1},{p2})")
         self.session.pasv_mode = True
