@@ -11,6 +11,7 @@ Session Design
 
 import socket
 from azazel.handler import FTPHandler
+from azazel.log import get_logger
 
 
 # The FTP Session Instance
@@ -23,6 +24,9 @@ class FTPSession:
         self.pasv_mode = False
         self.pasv_sock = None
 
+        # user info
+        self.username = None
+
         # dir stuff
         self.root = root
         self.cwd = "/"
@@ -34,6 +38,9 @@ class FTPSession:
         # handler
         self.handler = FTPHandler(self)
 
+        # logger
+        self.log = get_logger()
+
     def send(self, message):
         # Helper for encoding
         self.conn.send(f"{message}\r\n".encode())
@@ -41,6 +48,7 @@ class FTPSession:
     def handle(self):
         # What happens when Someone Connects
         self.handler.respond(220)
+        self.log.info(f"session opened from {self.addr}")
 
         while True:
             # We Listen... Patiently
@@ -54,8 +62,9 @@ class FTPSession:
             verb = parts[0].upper()
             args = parts[1] if len(parts) > 1 else ""
 
-            # Dispatch Table -> Handler Function
+            # Handler Function
             handler = self.handler.commands.get(verb)
+            self.log.debug(f">>> {verb} {args}")
             if handler:
                 handler(args)
             else:

@@ -10,6 +10,7 @@ import socket
 import os
 import time
 from azazel.dtp import DataTransferProcess
+from azazel.log import get_logger
 
 RESPONSES = {
     125: "Data connection already open",
@@ -35,6 +36,7 @@ class FTPHandler:
     def __init__(self, session):
 
         self.session = session
+        self.log = get_logger()
 
         # TODO: auth checking probably happens here
 
@@ -56,6 +58,7 @@ class FTPHandler:
 
     def respond(self, code, message=None):
         msg = message or RESPONSES.get(code, "")
+        self.log.debug(f"<<< {code} {msg}")
         self.session.send(f"{code} {msg}")
 
     def require_auth(self):
