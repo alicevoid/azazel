@@ -8,6 +8,7 @@ Interface Design
 import click
 import os
 import logging
+import secrets
 from azazel.server import FTPServer
 from azazel.client import FTPClient
 from azazel.log import get_logger
@@ -21,6 +22,11 @@ def cli():
 
 
 @cli.command()
+@click.option(
+    "-fff",
+    is_flag=True,
+    default=False,
+)
 @click.option(
     "--port",
     default=2121,
@@ -44,10 +50,18 @@ def server(port, root, verbose):
         for handler in logger.handlers:
             handler.setLevel(logging.DEBUG)
 
-    click.echo(f"starting server on port {port}, serving {root}")
-    ftp = FTPServer(port=port, root=root)
-    ftp.start()
-    pass
+    if fff:
+        # serves cwd
+        # TODO: did we specify filenames? if so, we only host a subset of them
+        cwd = os.getcwd()
+
+        # creates passphrase
+        fff_pass = secrets.token_urlsafe(21)
+
+    else:
+        click.echo(f"starting server on port {port}, serving {root}")
+        ftp = FTPServer(port=port, root=root)
+        ftp.start()
 
 
 @cli.command()
@@ -84,3 +98,6 @@ def log():
             line = f.readline()
             if line:
                 click.echo(line, nl=False)
+
+
+# helper:
