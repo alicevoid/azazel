@@ -21,7 +21,7 @@ RESPONSES = {
     226: "Transfer complete",
     227: "Entering Passive Mode",
     230: "User logged in",
-    250: "OK",
+    250: "Requested File Action OK",
     257: "is current directory",
     331: "User name okay, need password",
     425: "Use PORT or PASV first",

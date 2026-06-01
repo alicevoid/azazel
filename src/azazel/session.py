@@ -2,10 +2,7 @@
 Session Design
 
     FTP custom implementation to-spec
-    see RFC 959 for reference
-
-    at some point, i plan to implement FTPS (see RFC 4217)
-    but for now, i'm just learning as i go
+    I'm just learning as i go
 
 """
 
