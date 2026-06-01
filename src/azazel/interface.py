@@ -9,7 +9,10 @@ import click
 import os
 import logging
 from azazel.server import FTPServer
+from azazel.client import FTPClient
 from azazel.log import get_logger
+
+# TODO: add help flags to everything
 
 
 @click.group()
@@ -41,6 +44,17 @@ def server(port, root, verbose):
     ftp = FTPServer(port=port, root=root)
     ftp.start()
     pass
+
+
+@cli.command()
+@click.option("--host", default="localhost")
+@click.option("--port", default=2121)
+@click.option("--user", default="anonymous")
+@click.option("--password", default="")
+def client(host, port, user, password):
+    c = FTPClient(host, port)
+    c.connect()
+    c.login(user, password)
 
 
 @cli.command()
