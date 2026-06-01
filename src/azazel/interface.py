@@ -21,7 +21,11 @@ def cli():
 
 
 @cli.command()
-@click.option("--port", default=2121, help="Port to listen on (default: 2121)")
+@click.option(
+    "--port",
+    default=2121,
+    help="Port to listen on (default: 2121)",
+)
 @click.option(
     "--root",
     default=os.getcwd(),
@@ -47,10 +51,22 @@ def server(port, root, verbose):
 
 
 @cli.command()
-@click.option("--host", default="localhost")
-@click.option("--port", default=2121)
-@click.option("--user", default="anonymous")
-@click.option("--password", default="")
+@click.option(
+    "--host",
+    default="localhost",
+)
+@click.option(
+    "--port",
+    default=2121,
+)
+@click.option(
+    "--user",
+    default="anonymous",
+)
+@click.option(
+    "--password",
+    default="",
+)
 def client(host, port, user, password):
     c = FTPClient(host, port)
     c.connect()
