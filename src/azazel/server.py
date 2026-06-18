@@ -14,12 +14,19 @@ from azazel.session import FTPSession
 # The actual Server itself
 class FTPServer:
     def __init__(
-        self, host="", port=2121, root="/tmp/ftp", reuse_addr=False, password=None
+        self,
+        host="",
+        port=2121,
+        root="/tmp/ftp",
+        reuse_addr=False,
+        password=None,
+        fff_pw=None,
     ):
         self.host = host
         self.port = port
         self.socket = None  # the listening socket
         self.password = password  # for password-protected servers
+        self.fff_pw = fff_pw  # specifically for fff flag
         self.sessions = []  # connected clients
 
         # Directory Stuff

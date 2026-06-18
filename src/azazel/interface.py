@@ -23,7 +23,7 @@ def cli():
 
 @cli.command()
 @click.option(
-    "-fff",
+    "--fff",
     is_flag=True,
     default=False,
 )
@@ -51,12 +51,17 @@ def server(port, root, verbose):
             handler.setLevel(logging.DEBUG)
 
     if fff:
-        # serves cwd
         # TODO: did we specify filenames? if so, we only host a subset of them
-        cwd = os.getcwd()
 
         # creates passphrase
         fff_pass = secrets.token_urlsafe(21)
+
+        # picks the root and port for you
+
+        # creates the fff session
+        click.echo(f"fff-code: 127.0.0.1:{port}:{fff_pass}")
+        ftp = FTPSession(port=port, root=os.getcwd(), fff_pw=self.fff_pw)
+        ftp.start()
 
     else:
         click.echo(f"starting server on port {port}, serving {root}")
@@ -65,6 +70,10 @@ def server(port, root, verbose):
 
 
 @cli.command()
+@click.option(
+    "--fff",
+    default=None,
+)
 @click.option(
     "--host",
     default="localhost",
@@ -82,9 +91,17 @@ def server(port, root, verbose):
     default="",
 )
 def client(host, port, user, password):
-    c = FTPClient(host, port)
-    c.connect()
-    c.login(user, password)
+    if fff:
+        # send the password
+        # get told if we got it right
+        # start pulling everything
+        pass
+
+    else:
+        c = FTPClient(host, port)
+        c.connect()
+        c.login(user, password)
+        # pull everything
 
 
 @cli.command()
